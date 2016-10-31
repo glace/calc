@@ -109,6 +109,25 @@ func (this *Calc) CleanUpVariable() {
 	}
 }
 
+func (this *Calc) ParseVariableList(expression string) ([]string, error) {
+	var spiltedStr []string
+	var err error
+	var varList []string
+
+	spiltedStr, err = this.generateRPN(expression)
+	if err != nil {
+		return varList, errors.New(fmt.Sprintf("generateRPN fail, %s", err.Error()))
+	}
+
+	for _, value := range spiltedStr {
+		if calcIsVariable(value) {
+			varList = append(varList, value)
+		}
+	}
+
+	return varList, nil
+}
+
 // calculate the given expression string
 // return the result
 // eg. Calculate("1+2") returns 3, nil
@@ -151,7 +170,7 @@ func (this *Calc) calculateRPN(rpn []string) (float64, error) {
 	var stack LinkStack
 	stack.Init()
 	for i := 0; i < len(rpn); i++ {
-		if caleIsOperand(rpn[i]) {
+		if calcIsOperand(rpn[i]) {
 			if f, err := strconv.ParseFloat(rpn[i], 64); err != nil {
 				return 0, errors.New(fmt.Sprintf("operand expected a float number but given is '%s' ", rpn[i]))
 			} else {
@@ -194,7 +213,7 @@ func (this *Calc) generateRPN(exp string) ([]string, error) {
 	for i := 0; i < len(spiltedStr); i++ { // 遍历每一个元素
 		curSpilt := spiltedStr[i] //当前元素
 
-		if !caleIsOperand(curSpilt) {
+		if !calcIsOperand(curSpilt) {
 			// 如果不是操作数
 
 			// 四种情况入栈
@@ -283,7 +302,7 @@ func (this *Calc) splitString(expression string) []string {
 	for i := 0; i < len(byteExp); i++ {
 		curByte = byteExp[i]
 
-		if caleIsOperandByte(curByte) {
+		if calcIsOperandByte(curByte) {
 			operand += string(curByte)
 		} else {
 			completeOpt := false
@@ -304,7 +323,7 @@ func (this *Calc) splitString(expression string) []string {
 			if i+1 >= len(byteExp) {
 				completeOpt = true
 			}
-			if i+1 < len(byteExp) && (caleIsOperandByte(byteExp[i+1]) || calcIsSpace(byteExp[i+1])) {
+			if i+1 < len(byteExp) && (calcIsOperandByte(byteExp[i+1]) || calcIsSpace(byteExp[i+1])) {
 				completeOpt = true
 			}
 
@@ -331,7 +350,7 @@ func (this *Calc) splitString(expression string) []string {
 	return splitArr
 }
 
-func caleIsOperandByte(ch byte) bool {
+func calcIsOperandByte(ch byte) bool {
 	if calcIsAlpha(ch) || calcIsNumber(ch) {
 		return true
 	}
@@ -340,13 +359,36 @@ func caleIsOperandByte(ch byte) bool {
 
 // 判断是否是合法的操作数（数字或变量）
 // return a bool if given operand string is a valid operand(number or variable)
-func caleIsOperand(operand string) bool {
+func calcIsOperand(operand string) bool {
 	operand = strings.TrimSpace(operand)
 
 	// 判断是否是数字
 	// judge if given operand string is number
 	if _, err := strconv.ParseFloat(operand, 64); err == nil {
 		return true
+	}
+
+	// 判断是否是潜在的变量
+	// 变量名只支持大小写字母和数字
+	// judge if given operand string is variable
+	// a vaild variable name here only contains [A..Za..z0..9]
+	for _, v := range []byte(operand) {
+		if !(calcIsAlpha(v) || (v >= '0' && v <= '9')) {
+			return false
+		}
+	}
+	return true
+}
+
+// 判断是否是变量
+// return a bool if given operand string is a valid variable
+func calcIsVariable(operand string) bool {
+	operand = strings.TrimSpace(operand)
+
+	// 判断是否是数字
+	// judge if given operand string is number
+	if _, err := strconv.ParseFloat(operand, 64); err == nil {
+		return false
 	}
 
 	// 判断是否是潜在的变量
