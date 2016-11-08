@@ -68,7 +68,11 @@ func (this *Calc) normalCalculate(a, b float64, operator string) (float64, error
 	case "*":
 		result = a * b
 	case "/":
-		result = a / b
+		if b == 0 {
+			err = errors.New(fmt.Sprintf("division by zero"))
+		} else {
+			result = a / b
+		}
 	case ">":
 		result = boolToFloat64[a > b]
 	case "<":
@@ -259,6 +263,9 @@ func (this *Calc) generateRPN(exp string) ([]string, error) {
 	//将栈内剩余的操作符全部弹出。
 	for {
 		if pop := stack.Pop(); pop != nil {
+			if pop == "(" {
+				return rpn, errors.New("unmatched operator '(' found, expected more ')'")
+			}
 			rpn = append(rpn, pop.(string))
 		} else {
 			break
