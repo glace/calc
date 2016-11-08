@@ -31,6 +31,7 @@ var calcTestData = []struct {
 	{"1+2=4", 0, true, map[string]string{}},
 	{"1+", 0, false, map[string]string{}},
 	{"1+1)", 0, false, map[string]string{}},
+	{"(pv>1", 0, false, map[string]string{}},
 	{"pv>1", 0, false, map[string]string{}},
 }
 
